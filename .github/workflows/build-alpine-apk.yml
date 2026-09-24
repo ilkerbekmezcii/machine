@@ -79,4 +79,3 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# build-trigger: 2026-09-24
