@@ -2,6 +2,12 @@ name: Build Alpine APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-alpine-apk.yml
+      - smoke-trigger.txt
 
 concurrency:
   group: build-alpine-apk
@@ -35,6 +41,35 @@ jobs:
         shell: bash
         run: sudo bash src/scripts/build-runtime.sh "$GITHUB_WORKSPACE/src"
 
+      - name: Simulated rootfs smoke checks
+        working-directory: src
+        shell: bash
+        run: |
+          ROOTFS="app/src/main/assets/alpine-rootfs-aarch64.tgz"
+          test -s "$ROOTFS"
+          tar -tzf "$ROOTFS" | sed 's#^\./##' | tee /tmp/rootfs-files.txt >/dev/null
+          for required in \
+            bin/bash \
+            sbin/apk \
+            usr/bin/curl \
+            usr/bin/node \
+            usr/bin/npm \
+            usr/bin/npx \
+            usr/bin/openssl \
+            root/.profile \
+            etc/motd
+          do
+            grep -Fx "$required" /tmp/rootfs-files.txt
+          done
+          if grep -Fx "etc/issue" /tmp/rootfs-files.txt; then
+            echo "Unexpected startup issue banner in rootfs"
+            exit 1
+          fi
+          if grep -Fx "etc/issue.net" /tmp/rootfs-files.txt; then
+            echo "Unexpected network issue banner in rootfs"
+            exit 1
+          fi
+
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
@@ -64,6 +99,8 @@ jobs:
           grep -F "assets/runtime.sha256" /tmp/apk-contents.txt
           grep -F "lib/arm64-v8a/libproot.so" /tmp/apk-contents.txt
           grep -F "lib/arm64-v8a/libproot-loader.so" /tmp/apk-contents.txt
+          grep -F "lib/arm64-v8a/libtalloc.so" /tmp/apk-contents.txt
+          grep -F "lib/arm64-v8a/libandroid-shmem.so" /tmp/apk-contents.txt
           if grep -E "lib/(x86|x86_64|armeabi-v7a)/" /tmp/apk-contents.txt; then
             echo "Unexpected non-ARM64 native library in APK"
             exit 1
