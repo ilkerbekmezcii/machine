@@ -1,0 +1,77 @@
+name: Build Alpine APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-alpine-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout private Alpine source
+        uses: actions/checkout@v4
+        with:
+          repository: ilkerbekmezcii/alpine-linux-android
+          ref: main
+          token: ${{ secrets.ALPINE_REPO_TOKEN }}
+          path: src
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: src/**/*.gradle*
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android NDK
+        shell: bash
+        run: sdkmanager "ndk;28.0.13004108"
+
+      - name: Install Rust Android targets
+        shell: bash
+        run: |
+          rustup target add aarch64-linux-android x86_64-linux-android
+          cargo install cargo-ndk --locked
+
+      - name: Build Rust JNI
+        working-directory: src
+        shell: bash
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.0.13004108"
+          export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          rm -f app/src/main/jniLibs/arm64-v8a/libgravitalshell.so
+          rm -f app/src/main/jniLibs/x86_64/libgravitalshell.so
+          cd session-manager
+          cargo ndk \
+            -t arm64-v8a \
+            -t x86_64 \
+            -p 29 \
+            -o ../app/src/main/jniLibs \
+            build --release -p gravitalshell-jni
+
+      - name: Build debug APK
+        working-directory: src
+        shell: bash
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpine-linux-android-apk
+          path: src/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
