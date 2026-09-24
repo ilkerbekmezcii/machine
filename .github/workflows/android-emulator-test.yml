@@ -102,7 +102,10 @@ jobs:
             adb shell getprop ro.product.cpu.abilist
             adb shell getprop ro.dalvik.vm.native.bridge
             chmod +x gradlew
-            ./gradlew :app:connectedDebugAndroidTest --stacktrace
+            ./gradlew :app:installDebug :app:installDebugAndroidTest --stacktrace
+            set -o pipefail
+            adb shell am instrument -w -r com.ilker.linuxterminal.test/sh.gravital.shell.TerminalRegression | tee /tmp/instrumentation.txt
+            grep -F "PASS: Termux terminal" /tmp/instrumentation.txt
 
       - name: Upload emulator test reports
         if: always()
@@ -115,4 +118,4 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-# source-head: 841b44c660bc
+# source-head: 841b44c660bc-direct-instrumentation
