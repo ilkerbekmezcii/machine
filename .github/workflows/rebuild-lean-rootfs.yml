@@ -1,0 +1,61 @@
+name: Rebuild Lean Alpine Rootfs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/rebuild-lean-rootfs.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout private Alpine source
+        uses: actions/checkout@v5
+        with:
+          repository: ilkerbekmezcii/alpine-linux-android
+          ref: main
+          token: ${{ secrets.INTERNALKEY }}
+          path: src
+          persist-credentials: true
+          fetch-depth: 1
+
+      - name: Enable ARM64 binfmt
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Rebuild bundled Alpine rootfs
+        shell: bash
+        run: |
+          sudo bash src/scripts/bundle-dev-tools.sh "$GITHUB_WORKSPACE/src"
+
+      - name: Verify runtimes removed
+        shell: bash
+        run: |
+          tmp="$(mktemp -d)"
+          tar -xzf src/app/src/main/assets/alpine-minirootfs-3.22.6-aarch64.tgz -C "$tmp"
+          test ! -e "$tmp/usr/bin/node"
+          test ! -e "$tmp/usr/bin/python3"
+          test -x "$tmp/usr/local/bin/npm"
+          test -x "$tmp/usr/local/bin/pip"
+          du -h src/app/src/main/assets/alpine-minirootfs-3.22.6-aarch64.tgz
+
+      - name: Commit rebuilt rootfs to private source
+        working-directory: src
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/assets/alpine-minirootfs-3.22.6-aarch64.tgz
+          if git diff --cached --quiet; then
+            echo "Rootfs already up to date."
+          else
+            git commit -m "build: remove bundled Node and Python runtimes"
+            git push origin HEAD:main
+          fi
