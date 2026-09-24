@@ -65,12 +65,12 @@ jobs:
             -o ../app/src/main/jniLibs \
             build --release -p gravitalshell-jni
 
-      - name: Build debug APK
+      - name: Build debug APK and compile instrumentation tests
         working-directory: src
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --stacktrace
+          ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
