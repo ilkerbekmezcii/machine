@@ -105,7 +105,10 @@ jobs:
             ./gradlew :app:installDebug :app:installDebugAndroidTest --stacktrace
             timeout 240s adb shell am instrument -w -r com.ilker.linuxterminal.test/sh.gravital.shell.TerminalRegression > /tmp/instrumentation.txt 2>&1 || true
             cat /tmp/instrumentation.txt
-            if ! grep -F "PASS: Termux terminal" /tmp/instrumentation.txt; then adb logcat -d -v brief | tail -n 300; exit 1; fi
+            if ! grep -F "PASS: Termux terminal" /tmp/instrumentation.txt; then
+              adb logcat -d -v brief -s LinuxTerminalActivity:V SessionViewModel:V TermuxPtySession:V TerminalSession:V AndroidRuntime:E '*:S' || true
+              exit 1
+            fi
 
       - name: Upload emulator test reports
         if: always()
@@ -118,4 +121,4 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-# source-head: 841b44c660bc-direct-instrumentation
+# source-head: 1127fefec29b
