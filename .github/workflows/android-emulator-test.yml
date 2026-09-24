@@ -13,7 +13,7 @@ permissions:
 jobs:
   emulator-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
 
     steps:
       - name: Checkout private Alpine source
@@ -31,9 +31,9 @@ jobs:
         with:
           platforms: arm64
 
-      - name: Prepare current ARM64 rootfs
+      - name: Build Alpine runtime
         shell: bash
-        run: sudo bash src/scripts/prepare-rootfs.sh "$GITHUB_WORKSPACE/src"
+        run: sudo bash src/scripts/build-runtime.sh "$GITHUB_WORKSPACE/src"
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -51,29 +51,6 @@ jobs:
         with:
           packages: "platform-tools emulator"
 
-      - name: Install Android NDK
-        shell: bash
-        run: sdkmanager "ndk;28.0.13004108"
-
-      - name: Install Rust Android target
-        shell: bash
-        run: |
-          rustup target add aarch64-linux-android
-          cargo install cargo-ndk --locked --version 4.1.2
-
-      - name: Build ARM64 Rust JNI
-        working-directory: src
-        shell: bash
-        run: |
-          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.0.13004108"
-          export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
-          export ANDROID_NDK="$ANDROID_NDK_HOME"
-          NDK_PREBUILT="$(find "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
-          export PATH="$NDK_PREBUILT/bin:$PATH"
-          rm -f app/src/main/jniLibs/arm64-v8a/libgravitalshell.so
-          cd session-manager
-          cargo ndk -t arm64-v8a --platform 29 -o ../app/src/main/jniLibs build --release -p gravitalshell-jni
-
       - name: Enable KVM
         shell: bash
         run: |
@@ -83,7 +60,7 @@ jobs:
           test -r /dev/kvm
           test -w /dev/kvm
 
-      - name: Run current ARM64 app regression on Android 15
+      - name: Run terminal regression on Android 15
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -108,7 +85,7 @@ jobs:
             adb logcat -c
             adb shell am instrument -w -r com.ilker.linuxterminal.test/sh.gravital.shell.TerminalRegression > /tmp/instrumentation.txt 2>&1 || true
             cat /tmp/instrumentation.txt
-            grep -F "PASS: Termux terminal" /tmp/instrumentation.txt || (adb logcat -d -v brief | grep -E "LinuxTerminalActivity|FirstRunSetup|SessionViewModel|TermuxPtySession|TerminalSession|AndroidRuntime|proot|gravital|NoSuchMethodError" || true; false)
+            grep -F "PASS: native Termux PTY" /tmp/instrumentation.txt || (adb logcat -d -v brief | grep -E "MainActivity|RuntimeBootstrapper|TerminalController|TerminalSession|AndroidRuntime|proot" || true; false)
             if grep -F "FAIL:" /tmp/instrumentation.txt; then exit 1; fi
 
       - name: Upload emulator test output
