@@ -31,11 +31,6 @@ jobs:
         with:
           platforms: arm64
 
-      - name: Enable ARM64 binfmt for rootfs preparation
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Prepare lean Alpine rootfs
         shell: bash
         run: |
