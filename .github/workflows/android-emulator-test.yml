@@ -42,7 +42,7 @@ jobs:
 
   emulator-test:
     needs: prepare-rootfs
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     timeout-minutes: 25
 
     steps:
@@ -62,11 +62,10 @@ jobs:
           name: alpine-arm64-rootfs
           path: src/app/src/main/assets
 
-      - name: Verify ARM64 host and rootfs
+      - name: Verify prepared ARM64 rootfs
         shell: bash
         run: |
           uname -m
-          test "$(uname -m)" = "arm64"
           test -s src/app/src/main/assets/alpine-minirootfs-3.22.6-aarch64.tgz
 
       - name: Set up Java 17
