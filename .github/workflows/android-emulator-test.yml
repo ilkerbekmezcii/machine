@@ -75,6 +75,8 @@ jobs:
           emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           working-directory: src
           script: |
+            echo "=== Source revision ==="
+            git rev-parse HEAD
             echo "=== Emulator ABI ==="
             adb shell getprop ro.product.cpu.abilist
             adb shell getprop ro.dalvik.vm.native.bridge
@@ -85,7 +87,7 @@ jobs:
             adb logcat -c
             adb shell am instrument -w -r com.ilker.linuxterminal.test/sh.gravital.shell.TerminalRegression > /tmp/instrumentation.txt 2>&1 || true
             cat /tmp/instrumentation.txt
-            grep -F "PASS: native Termux PTY" /tmp/instrumentation.txt || (adb logcat -d -v brief | grep -E "MainActivity|RuntimeBootstrapper|TerminalController|TerminalSession|AndroidRuntime|proot" || true; false)
+            grep -F "PASS: native IME, Termux PTY" /tmp/instrumentation.txt || (adb logcat -d -v brief | grep -E "MainActivity|RuntimeBootstrapper|TerminalController|TerminalSession|AndroidRuntime|proot" || true; false)
             if grep -F "FAIL:" /tmp/instrumentation.txt; then exit 1; fi
 
       - name: Upload emulator test output
