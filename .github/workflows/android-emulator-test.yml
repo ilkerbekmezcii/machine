@@ -7,6 +7,10 @@ on:
     paths:
       - ".github/workflows/android-emulator-test.yml"
 
+concurrency:
+  group: android-emulator-test
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -25,6 +29,10 @@ jobs:
           path: src
           persist-credentials: false
           fetch-depth: 1
+
+      - name: Record source revision
+        shell: bash
+        run: git -C src rev-parse HEAD | tee /tmp/source-commit.txt
 
       - name: Build native x86_64 Alpine runtime for emulator
         shell: bash
@@ -74,7 +82,7 @@ jobs:
           working-directory: src
           script: |
             echo "=== Source revision ==="
-            git rev-parse HEAD
+            cat /tmp/source-commit.txt
             echo "=== Emulator ABI ==="
             adb shell getprop ro.product.cpu.abilist
             adb shell getprop ro.product.cpu.abilist | tr -d '\r' | grep -F "x86_64"
@@ -92,6 +100,7 @@ jobs:
         with:
           name: android-emulator-test-output
           path: |
+            /tmp/source-commit.txt
             /tmp/instrumentation.txt
             src/app/build/outputs/apk/
             src/app/build/outputs/apk/androidTest/
