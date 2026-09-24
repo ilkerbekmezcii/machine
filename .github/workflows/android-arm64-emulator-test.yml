@@ -7,6 +7,10 @@ on:
     paths:
       - ".github/workflows/android-arm64-emulator-test.yml"
 
+concurrency:
+  group: arm64-production-runtime-validation
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -26,6 +30,10 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
 
+      - name: Record source revision
+        shell: bash
+        run: git -C src rev-parse HEAD | tee /tmp/source-commit.txt
+
       - name: Enable ARM64 binfmt
         uses: docker/setup-qemu-action@v3
         with:
@@ -33,10 +41,7 @@ jobs:
 
       - name: Build and execute production ARM64 runtime
         shell: bash
-        run: |
-          sudo bash src/scripts/build-runtime.sh "$GITHUB_WORKSPACE/src"
-          echo "=== Source revision ==="
-          git -C src rev-parse HEAD
+        run: sudo bash src/scripts/build-runtime.sh "$GITHUB_WORKSPACE/src"
 
       - name: Verify ARM64 PRoot binaries
         shell: bash
@@ -102,6 +107,7 @@ jobs:
         with:
           name: arm64-production-runtime-validation
           path: |
+            /tmp/source-commit.txt
             /tmp/proot-elf.txt
             /tmp/loader-elf.txt
             /tmp/rootfs-files.txt
