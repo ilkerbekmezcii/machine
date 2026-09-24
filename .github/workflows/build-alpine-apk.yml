@@ -1,11 +1,8 @@
 name: Build Alpine APK
 
 on:
-  workflow_dispatch:
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/build-alpine-apk.yml"
 
 permissions:
   contents: read
