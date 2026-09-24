@@ -130,7 +130,7 @@ jobs:
           emulator-boot-timeout: 900
           disable-animations: true
           disable-linux-hw-accel: true
-          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -accel off -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           working-directory: src
           script: |
             echo "=== Emulator ABI ==="
