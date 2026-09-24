@@ -58,6 +58,12 @@ jobs:
           rustup target add aarch64-linux-android
           cargo install cargo-ndk --locked --version 4.1.2
 
+      - name: Run host-side simulation tests
+        working-directory: src/session-manager
+        shell: bash
+        run: |
+          cargo test -p gravitalshell-core --all-targets
+
       - name: Build Rust JNI
         working-directory: src
         shell: bash
@@ -91,4 +97,4 @@ jobs:
           retention-days: 7
 
 
-# source-head: 1d93ce0d48e0
+# source-head: 52aab8a8920e
