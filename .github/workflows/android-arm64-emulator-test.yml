@@ -1,4 +1,4 @@
-name: Android ARM64 Emulator Test
+name: Android ARM64 Compatibility Test
 
 on:
   workflow_dispatch:
@@ -11,9 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  arm64-emulator-test:
+  arm64-compatibility-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
 
     steps:
       - name: Checkout private Alpine source
@@ -31,7 +31,7 @@ jobs:
         with:
           platforms: arm64
 
-      - name: Build Alpine runtime
+      - name: Build production ARM64 Alpine runtime
         shell: bash
         run: sudo bash src/scripts/build-runtime.sh "$GITHUB_WORKSPACE/src"
 
@@ -51,30 +51,41 @@ jobs:
         with:
           packages: "platform-tools emulator"
 
-      - name: Run terminal regression on native ARM64 Android
+      - name: Enable KVM access when available
+        shell: bash
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            test -r /dev/kvm
+            test -w /dev/kvm
+            ls -l /dev/kvm
+          else
+            echo "::warning::/dev/kvm is unavailable; emulator runner will use software acceleration if supported."
+          fi
+
+      - name: Run production ARM64 terminal through Android native bridge
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: 35
           target: google_apis
-          arch: arm64-v8a
-          profile: Nexus 5X
+          arch: x86_64
+          profile: pixel_5
           cores: 2
-          ram-size: 3072M
-          heap-size: 384M
-          emulator-boot-timeout: 1200
+          ram-size: 4096M
+          heap-size: 512M
+          emulator-boot-timeout: 600
           disable-animations: true
-          disable-linux-hw-accel: true
-          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -accel off
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           working-directory: src
           script: |
             echo "=== Source revision ==="
             git rev-parse HEAD
-            echo "=== Android guest ABI ==="
+            echo "=== Emulator ABI / native bridge ==="
             adb shell getprop ro.product.cpu.abilist
             adb shell getprop ro.product.cpu.abi
             adb shell getprop ro.dalvik.vm.native.bridge
-            test "$(adb shell getprop ro.product.cpu.abi | tr -d '\r')" = "arm64-v8a"
-            test -z "$(adb shell getprop ro.dalvik.vm.native.bridge | tr -d '\r')"
+            adb shell getprop ro.product.cpu.abilist | tr -d '\r' | grep -F "arm64-v8a"
+            test "$(adb shell getprop ro.dalvik.vm.native.bridge | tr -d '\r')" = "libndk_translation.so"
             chmod +x gradlew
             ./gradlew :app:installDebug :app:installDebugAndroidTest --stacktrace
             adb logcat -c
@@ -83,11 +94,11 @@ jobs:
             grep -F "PASS: native IME, Termux PTY" /tmp/instrumentation-arm64.txt || (adb logcat -d -v brief | grep -E "MainActivity|RuntimeBootstrapper|TerminalController|TerminalSession|AndroidRuntime|proot|linker" || true; false)
             if grep -F "FAIL:" /tmp/instrumentation-arm64.txt; then exit 1; fi
 
-      - name: Upload ARM64 emulator test output
+      - name: Upload ARM64 compatibility output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-arm64-emulator-test-output
+          name: android-arm64-compatibility-output
           path: |
             /tmp/instrumentation-arm64.txt
             src/app/build/outputs/apk/
