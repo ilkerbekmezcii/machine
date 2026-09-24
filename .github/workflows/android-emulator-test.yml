@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   emulator-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
 
     steps:
@@ -25,11 +25,6 @@ jobs:
           path: src
           persist-credentials: false
           fetch-depth: 1
-
-      - name: Enable ARM64 binfmt for rootfs preparation
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
 
       - name: Prepare lean Alpine rootfs
         shell: bash
@@ -82,24 +77,19 @@ jobs:
             sudo chmod 666 /dev/kvm
           fi
 
-      - name: Run instrumentation tests on Android 15 emulator
+      - name: Run instrumentation tests on ARM64 Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 29
           target: google_apis
-          arch: x86_64
-          profile: pixel_5
-          cores: 2
-          ram-size: 4096M
-          heap-size: 512M
-          force-avd-creation: false
+          arch: arm64-v8a
+          profile: pixel_2
           emulator-boot-timeout: 900
           disable-animations: true
-          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
             echo "=== Emulator ABI ==="
             adb shell getprop ro.product.cpu.abilist
-            adb shell getprop ro.dalvik.vm.native.bridge
             cd src
             chmod +x gradlew
             ./gradlew :app:connectedDebugAndroidTest --stacktrace
@@ -115,4 +105,4 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-# source-head: 1d93ce0d48e0
+# source-head: current-arm64
