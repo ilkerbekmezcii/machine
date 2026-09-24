@@ -3,6 +3,10 @@ name: Build Alpine APK
 on:
   workflow_dispatch:
 
+concurrency:
+  group: build-alpine-apk
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
