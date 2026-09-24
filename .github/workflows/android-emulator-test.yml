@@ -66,7 +66,7 @@ jobs:
             echo "::warning::/dev/kvm is unavailable; emulator runner will fall back to software acceleration if supported."
           fi
 
-      - name: Run native terminal regression on Android 15
+      - name: Run PRoot terminal regression on Android 15
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
