@@ -26,14 +26,9 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
 
-      - name: Enable ARM64 binfmt
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      - name: Build Alpine runtime
+      - name: Build native x86_64 Alpine runtime for emulator
         shell: bash
-        run: sudo bash src/scripts/build-runtime.sh "$GITHUB_WORKSPACE/src"
+        run: sudo env RUNTIME_ABI=x86_64 bash src/scripts/build-runtime.sh "$GITHUB_WORKSPACE/src"
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -63,7 +58,7 @@ jobs:
             echo "::warning::/dev/kvm is unavailable; emulator runner will fall back to software acceleration if supported."
           fi
 
-      - name: Run terminal regression on Android 15
+      - name: Run native terminal regression on Android 15
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -82,11 +77,9 @@ jobs:
             git rev-parse HEAD
             echo "=== Emulator ABI ==="
             adb shell getprop ro.product.cpu.abilist
-            adb shell getprop ro.dalvik.vm.native.bridge
-            adb shell getprop ro.product.cpu.abilist | tr -d '\r' | grep -F "arm64-v8a"
-            test "$(adb shell getprop ro.dalvik.vm.native.bridge | tr -d '\r')" = "libndk_translation.so"
+            adb shell getprop ro.product.cpu.abilist | tr -d '\r' | grep -F "x86_64"
             chmod +x gradlew
-            ./gradlew :app:installDebug :app:installDebugAndroidTest --stacktrace
+            ./gradlew -PruntimeAbi=x86_64 :app:installDebug :app:installDebugAndroidTest --stacktrace
             adb logcat -c
             adb shell am instrument -w -r com.ilker.linuxterminal.test/sh.gravital.shell.TerminalRegression > /tmp/instrumentation.txt 2>&1 || true
             cat /tmp/instrumentation.txt
