@@ -26,6 +26,16 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
 
+      - name: Enable ARM64 binfmt
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Prepare lean Alpine rootfs
+        shell: bash
+        run: |
+          sudo bash src/scripts/prepare-rootfs.sh "$GITHUB_WORKSPACE/src"
+
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
@@ -81,4 +91,4 @@ jobs:
           retention-days: 7
 
 
-# source-head: 6a137dda4162
+# source-head: 72c161e89eab
