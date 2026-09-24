@@ -17,11 +17,11 @@ jobs:
 
     steps:
       - name: Checkout private Alpine source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ilkerbekmezcii/alpine-linux-android
           ref: main
-          token: ${{ secrets.ALPINE_REPO_TOKEN }}
+          token: ${{ secrets.INTERNALKEY }}
           path: src
           persist-credentials: false
           fetch-depth: 1
