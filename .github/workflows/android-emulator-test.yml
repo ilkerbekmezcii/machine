@@ -47,7 +47,7 @@ jobs:
   emulator-test:
     needs: prepare-rootfs
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 25
 
     steps:
       - name: Checkout private Alpine source
@@ -127,7 +127,7 @@ jobs:
           cores: 2
           ram-size: 2048M
           heap-size: 384M
-          emulator-boot-timeout: 900
+          emulator-boot-timeout: 360
           disable-animations: true
           disable-linux-hw-accel: true
           emulator-options: -accel off -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
@@ -160,4 +160,4 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-# source-head: 32cd3a01f103
+# source-head: 32cd3a01f103-timeout
