@@ -69,10 +69,22 @@ jobs:
             exit 1
           fi
 
+      - name: Record build provenance
+        working-directory: src
+        shell: bash
+        run: |
+          OUT="app/build/outputs/apk/debug"
+          APK="$(find "$OUT" -maxdepth 1 -name '*.apk' -print -quit)"
+          git rev-parse HEAD > "$OUT/source-commit.txt"
+          sha256sum "$APK" > "$OUT/SHA256SUMS"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: alpine-terminal-v2-apk
-          path: src/app/build/outputs/apk/debug/*.apk
+          path: |
+            src/app/build/outputs/apk/debug/*.apk
+            src/app/build/outputs/apk/debug/SHA256SUMS
+            src/app/build/outputs/apk/debug/source-commit.txt
           if-no-files-found: error
           retention-days: 7
