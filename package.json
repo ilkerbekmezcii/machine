@@ -1,0 +1,14 @@
+{
+  "name": "kodcu-ai-coding-agent",
+  "version": "1.0.0",
+  "description": "Ollama Cloud ile calisan AI kodlama ajani - Android APK",
+  "scripts": {
+    "sync": "cap sync android",
+    "open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.2",
+    "@capacitor/cli": "^6.2.2",
+    "@capacitor/core": "^6.2.2"
+  }
+}
