@@ -1,0 +1,9 @@
+{
+  "appId": "com.kodcu.aiagent",
+  "appName": "Kodcu",
+  "webDir": "www",
+  "backgroundColor": "#ffffff",
+  "android": {
+    "backgroundColor": "#ffffff"
+  }
+}
